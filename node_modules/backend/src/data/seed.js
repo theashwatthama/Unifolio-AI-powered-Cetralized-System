@@ -72,7 +72,7 @@ const seedDemoData = async () => {
         password: 'student123',
       },
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
   );
 
   await User.findOneAndUpdate(

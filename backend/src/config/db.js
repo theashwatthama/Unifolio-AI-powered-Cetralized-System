@@ -34,10 +34,16 @@ const connectDB = async () => {
       configureDnsForSrv();
     }
 
+    const useInsecureTls = process.env.MONGO_TLS_INSECURE === 'true';
+    const forceIPv4 = process.env.MONGO_IPV4_ONLY === 'true';
+
     await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 15000,
       connectTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      tlsAllowInvalidCertificates: useInsecureTls,
+      tlsAllowInvalidHostnames: useInsecureTls,
+      family: forceIPv4 ? 4 : undefined,
     });
     console.log('MongoDB connected');
   } catch (error) {

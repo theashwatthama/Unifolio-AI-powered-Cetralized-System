@@ -3,6 +3,17 @@ const Skill = require('../models/Skill');
 const { CATEGORY_TO_SKILL } = require('../utils/skillMap');
 const { calculateAchievementScore } = require('../utils/scoring');
 
+const DASHBOARD_CATEGORIES = [
+  'Hackathon',
+  'Internship',
+  'Sports',
+  'Course',
+  'LeetCode',
+  'HackerRank',
+  'GeeksforGeeks',
+  'Codeforces',
+];
+
 const addAchievement = async (req, res) => {
   try {
     const { userId, title, category, description, date, hasProof = false } = req.body;
@@ -84,7 +95,7 @@ const getDashboard = async (req, res) => {
     const rejected = achievements.filter((item) => item.rejected).length;
     const pending = achievements.filter((item) => !item.verified && !item.rejected).length;
 
-    const categoryBreakdown = ['Hackathon', 'Internship', 'Sports', 'Course'].map((category) => ({
+    const categoryBreakdown = DASHBOARD_CATEGORIES.map((category) => ({
       category,
       count: achievements.filter((item) => item.category === category).length,
     }));

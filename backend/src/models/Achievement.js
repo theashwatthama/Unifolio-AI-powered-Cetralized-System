@@ -15,7 +15,7 @@ const achievementSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Hackathon', 'Internship', 'Sports', 'Course'],
+      enum: ['Hackathon', 'Internship', 'Sports', 'Course', 'LeetCode', 'HackerRank', 'GeeksforGeeks', 'Codeforces'],
       required: true,
     },
     description: {

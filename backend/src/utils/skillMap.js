@@ -3,6 +3,10 @@ const CATEGORY_TO_SKILL = {
   Internship: 'Industry Experience',
   Sports: 'Teamwork',
   Course: 'Technical Knowledge',
+  LeetCode: 'DSA Proficiency',
+  HackerRank: 'Coding Assessment Skills',
+  GeeksforGeeks: 'Algorithmic Thinking',
+  Codeforces: 'Competitive Programming',
 };
 
 module.exports = {
