@@ -2,6 +2,7 @@ const Achievement = require('../models/Achievement');
 const Skill = require('../models/Skill');
 const { CATEGORY_TO_SKILL } = require('../utils/skillMap');
 const { calculateAchievementScore } = require('../utils/scoring');
+const { detectSuspiciousCertificate } = require('../utils/certificateDetector');
 
 const DASHBOARD_CATEGORIES = [
   'Hackathon',
@@ -19,6 +20,8 @@ const addAchievement = async (req, res) => {
     const { userId, title, category, description, date, hasProof = false } = req.body;
     const uploadedFile = req.file;
     const proofExists = Boolean(uploadedFile) || hasProof === 'true' || hasProof === true;
+    const detection = detectSuspiciousCertificate(uploadedFile);
+    const suspiciousReason = detection.reasons.join('; ');
 
     if (!userId || !title || !category || !description || !date) {
       return res.status(400).json({ message: 'All required fields must be provided' });
@@ -36,6 +39,8 @@ const addAchievement = async (req, res) => {
       proofFileUrl: uploadedFile ? `/uploads/${uploadedFile.filename}` : '',
       proofFileName: uploadedFile ? uploadedFile.originalname : '',
       proofFileType: uploadedFile ? uploadedFile.mimetype : '',
+      suspiciousProof: detection.suspicious,
+      suspiciousProofReason: suspiciousReason,
       score,
       verified: false,
       rejected: false,
@@ -51,7 +56,14 @@ const addAchievement = async (req, res) => {
       );
     }
 
-    return res.status(201).json({ message: 'Achievement added', achievement });
+    return res.status(201).json({
+      message: 'Achievement added',
+      achievement,
+      detectorWarning: detection.suspicious
+        ? 'Potential fake certificate detected. Please upload a clearer/original proof.'
+        : '',
+      detectorReasons: detection.reasons,
+    });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to add achievement', error: error.message });
   }

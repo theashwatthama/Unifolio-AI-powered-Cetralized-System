@@ -84,6 +84,7 @@ Production-ready, hackathon-optimized full-stack application for centralized, tr
 - GET /api/achievements/:userId
 - PUT /api/verify/:id
 - GET /api/profile/:userId
+- GET /api/resume/:userId
 - GET /api/dashboard/:userId
 - POST /api/login
 - POST /api/register-student

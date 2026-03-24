@@ -16,9 +16,14 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+    <div className="app-shell-bg relative min-h-screen overflow-hidden">
+      <div className="app-shell-aurora pointer-events-none absolute inset-0" />
+      <div className="app-shell-grid pointer-events-none absolute inset-0" />
+      <div className="app-shell-blob app-shell-blob-one" />
+      <div className="app-shell-blob app-shell-blob-two" />
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <header className="mb-6 rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -58,7 +63,7 @@ const Layout = ({ children }) => {
                       to={`/profile/${user._id}`}
                       className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
                     >
-                      Public Profile
+                      My Achievements
                     </Link>
                   </>
                 )}
@@ -86,7 +91,7 @@ const Layout = ({ children }) => {
 
         <main className="flex-1">{children}</main>
 
-        <footer className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-xs text-slate-500 shadow-sm">
+        <footer className="mt-6 rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 text-center text-xs text-slate-500 shadow-sm backdrop-blur">
           Copyright {new Date().getFullYear()} Unifolio - AI Powered Cetralized System. All rights reserved.
         </footer>
       </div>

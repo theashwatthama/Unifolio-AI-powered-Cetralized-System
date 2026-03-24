@@ -18,6 +18,7 @@ const AddAchievementPage = () => {
   const [proofFile, setProofFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [detectorWarning, setDetectorWarning] = useState('');
   const fileInputRef = useRef(null);
 
   const onChange = (event) => {
@@ -37,6 +38,7 @@ const AddAchievementPage = () => {
     event.preventDefault();
     setLoading(true);
     setMessage('');
+    setDetectorWarning('');
 
     try {
       const payload = new FormData();
@@ -53,8 +55,9 @@ const AddAchievementPage = () => {
         payload.append('hasProof', 'false');
       }
 
-      await api.post('/add-achievement', payload);
+      const response = await api.post('/add-achievement', payload);
       setMessage('Achievement added successfully. It is now pending admin verification.');
+      setDetectorWarning(response.data?.detectorWarning || '');
       setFormData({
         title: '',
         category: 'Hackathon',
@@ -159,6 +162,12 @@ const AddAchievementPage = () => {
 
           {message && (
             <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-700">{message}</p>
+          )}
+
+          {detectorWarning && (
+            <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+              {detectorWarning}
+            </p>
           )}
 
           <button

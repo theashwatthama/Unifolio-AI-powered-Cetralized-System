@@ -9,6 +9,51 @@ import { useAuth } from '../context/AuthContext';
 import { CATEGORIES, STATUS_FILTERS } from '../utils/constants';
 import { formatDate } from '../utils/formatters';
 
+const buildLocalResumeDraft = ({ user, achievements, trustScore }) => {
+  const safeAchievements = Array.isArray(achievements) ? achievements : [];
+  const verified = safeAchievements.filter((item) => item.verified).length;
+  const pending = safeAchievements.filter((item) => !item.verified && !item.rejected).length;
+
+  const summary = [
+    `${user?.name || 'Student'} is an achievement-driven student with ${verified} verified accomplishment(s).`,
+    `Current trust score: ${trustScore || 0}.`,
+    `Total achievements: ${safeAchievements.length}, Verified: ${verified}, Pending: ${pending}.`,
+  ].join(' ');
+
+  const achievementsBlock = safeAchievements
+    .slice(0, 10)
+    .map((item) => {
+      const status = item.verified ? 'Verified' : item.rejected ? 'Rejected' : 'Pending';
+      const proof = item.hasProof ? 'Proof Attached' : 'No Proof';
+      return `- ${item.title} (${item.category}) | ${status} | ${formatDate(item.date)} | ${proof}`;
+    })
+    .join('\n');
+
+  const resumeText = [
+    `${(user?.name || 'Student').toUpperCase()}`,
+    `${user?.email || ''}`,
+    '',
+    'PROFESSIONAL SUMMARY',
+    summary,
+    '',
+    'KEY SKILLS',
+    '- Problem Solving, Technical Learning, Collaboration',
+    '',
+    'ACHIEVEMENTS',
+    achievementsBlock || '- No achievements submitted yet.',
+    '',
+    'PROFILE INSIGHT',
+    `- Role: ${user?.role || 'Student'}`,
+    `- Trust Score: ${trustScore || 0}`,
+    '- Portfolio Type: Centralized Academic + Extracurricular Record',
+  ].join('\n');
+
+  return {
+    summary,
+    resumeText,
+  };
+};
+
 const StudentDashboard = () => {
   const { user } = useAuth();
 
@@ -18,6 +63,11 @@ const StudentDashboard = () => {
   const [error, setError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [resumeText, setResumeText] = useState('');
+  const [resumeSummary, setResumeSummary] = useState('');
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeMessage, setResumeMessage] = useState('');
+  const [resumeMessageTone, setResumeMessageTone] = useState('info');
 
   const fetchData = async () => {
     if (!user?._id) {
@@ -71,6 +121,100 @@ const StudentDashboard = () => {
     if (item.rejected) return 'rejected';
     return 'pending';
   };
+
+  const generateResume = async () => {
+    if (!user?._id) {
+      return;
+    }
+
+    setResumeLoading(true);
+    setResumeMessage('');
+    setResumeMessageTone('info');
+
+    try {
+      const response = await api.get(`/resume/${user._id}`);
+      const nextResume = response.data?.resume?.resumeText || '';
+      const nextSummary = response.data?.resume?.summary || '';
+
+      if (nextResume) {
+        setResumeText(nextResume);
+        setResumeSummary(nextSummary);
+        setResumeMessage('AI resume generated successfully.');
+        setResumeMessageTone('success');
+        return;
+      }
+
+      const localDraft = buildLocalResumeDraft({
+        user,
+        achievements,
+        trustScore: dashboard?.trustScore || 0,
+      });
+      setResumeText(localDraft.resumeText);
+      setResumeSummary(localDraft.summary);
+      setResumeMessage('Resume generated using local fallback draft.');
+      setResumeMessageTone('warning');
+    } catch (err) {
+      const localDraft = buildLocalResumeDraft({
+        user,
+        achievements,
+        trustScore: dashboard?.trustScore || 0,
+      });
+      setResumeText(localDraft.resumeText);
+      setResumeSummary(localDraft.summary);
+      setResumeMessage(
+        `${err.response?.data?.message || 'Backend resume service unavailable'}. Local fallback resume generated.`
+      );
+      setResumeMessageTone('warning');
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const copyResume = async () => {
+    if (!resumeText) {
+      setResumeMessage('Generate resume first.');
+      setResumeMessageTone('warning');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(resumeText);
+      setResumeMessage('Resume copied to clipboard.');
+      setResumeMessageTone('success');
+    } catch (error) {
+      setResumeMessage('Unable to copy resume. Please copy manually.');
+      setResumeMessageTone('error');
+    }
+  };
+
+  const downloadResume = () => {
+    if (!resumeText) {
+      setResumeMessage('Generate resume first.');
+      setResumeMessageTone('warning');
+      return;
+    }
+
+    const blob = new Blob([resumeText], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${(user?.name || 'student').replace(/\s+/g, '_')}_resume.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+    setResumeMessage('Resume file downloaded.');
+    setResumeMessageTone('success');
+  };
+
+  const resumeMessageClass =
+    resumeMessageTone === 'success'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : resumeMessageTone === 'warning'
+        ? 'border-amber-200 bg-amber-50 text-amber-700'
+        : resumeMessageTone === 'error'
+          ? 'border-rose-200 bg-rose-50 text-rose-700'
+          : 'border-cyan-200 bg-cyan-50 text-cyan-700';
 
   if (loading) {
     return (
@@ -211,10 +355,68 @@ const StudentDashboard = () => {
                       </span>
                     )}
                   </div>
+
+                  {item.rejected && item.rejectionFeedback && (
+                    <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                      <span className="font-semibold">Admin Review:</span> {item.rejectionFeedback}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">AI Resume Builder</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Generates a ready-to-use resume draft using your achievements, certificates, and skills.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={generateResume}
+                disabled={resumeLoading}
+                className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {resumeLoading ? 'Generating...' : 'Generate Resume'}
+              </button>
+              <button
+                type="button"
+                onClick={copyResume}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-100"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={downloadResume}
+                className="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100"
+              >
+                Download TXT
+              </button>
+            </div>
+          </div>
+
+          {resumeMessage && (
+            <p className={`mt-4 rounded-lg border px-3 py-2 text-sm ${resumeMessageClass}`}>{resumeMessage}</p>
+          )}
+
+          {resumeSummary && (
+            <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">{resumeSummary}</p>
+          )}
+
+          <textarea
+            value={resumeText}
+            readOnly
+            rows={14}
+            placeholder="Click Generate Resume to create your AI resume draft."
+            className="mt-4 w-full rounded-xl border border-slate-300 bg-white/95 p-3 font-mono text-xs leading-relaxed text-slate-700 shadow-inner outline-none focus:border-cyan-400"
+          />
         </section>
       </div>
     </Layout>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api/api';
 import Badge from '../components/Badge';
 import Layout from '../components/Layout';
-import { CATEGORIES, STATUS_FILTERS } from '../utils/constants';
+import { CATEGORIES } from '../utils/constants';
 import { formatDate } from '../utils/formatters';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -20,12 +20,19 @@ const resolveProofUrl = (proofFileUrl) => {
   return `${FILE_BASE}${proofFileUrl}`;
 };
 
+const STATUS_TABS = [
+  { label: 'Pending Verification', value: 'pending' },
+  { label: 'Approved', value: 'verified' },
+  { label: 'Rejected', value: 'rejected' },
+];
+
 const AdminPanel = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [reviewInputs, setReviewInputs] = useState({});
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -46,12 +53,25 @@ const AdminPanel = () => {
   }, []);
 
   const updateVerification = async (id, action) => {
+    const rejectionFeedback = String(reviewInputs[id] || '').trim();
+
+    if (action === 'reject' && !rejectionFeedback) {
+      setError('Reject karne ke liye review feedback dena required hai.');
+      return;
+    }
+
     try {
-      await api.put(`/verify/${id}`, { action });
+      setError('');
+      await api.put(`/verify/${id}`, { action, rejectionFeedback });
+      setReviewInputs((prev) => ({ ...prev, [id]: '' }));
       await fetchSubmissions();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update verification status');
     }
+  };
+
+  const onReviewInputChange = (id, value) => {
+    setReviewInputs((prev) => ({ ...prev, [id]: value }));
   };
 
   const resetDetails = async () => {
@@ -82,10 +102,6 @@ const AdminPanel = () => {
     return submissions.filter((item) => {
       const categoryMatch = categoryFilter === 'all' || item.category === categoryFilter;
 
-      if (statusFilter === 'all') {
-        return categoryMatch;
-      }
-
       if (statusFilter === 'verified') {
         return categoryMatch && item.verified;
       }
@@ -107,7 +123,27 @@ const AdminPanel = () => {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {STATUS_TABS.map((tab) => {
+              const isActive = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.value)}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">Category</label>
               <select
@@ -119,21 +155,6 @@ const AdminPanel = () => {
                 {CATEGORIES.map((category) => (
                   <option key={category} value={category}>
                     {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              >
-                {STATUS_FILTERS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
                   </option>
                 ))}
               </select>
@@ -193,7 +214,18 @@ const AdminPanel = () => {
                       <span className="rounded-full bg-slate-100 px-2 py-1">{formatDate(item.date)}</span>
                       <span className="rounded-full bg-slate-100 px-2 py-1">Score: {item.score}</span>
                       {item.hasProof && <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">Proof</span>}
+                      {item.suspiciousProof && (
+                        <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-1 text-amber-800">
+                          Potential Fake Proof
+                        </span>
+                      )}
                     </div>
+
+                    {item.suspiciousProof && item.suspiciousProofReason && (
+                      <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        Detector: {item.suspiciousProofReason}
+                      </p>
+                    )}
 
                     {proofUrl && (
                       <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -218,26 +250,54 @@ const AdminPanel = () => {
                         )}
                       </div>
                     )}
+
+                    {item.rejected && item.rejectionFeedback && (
+                      <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                        <span className="font-semibold">Admin Review:</span> {item.rejectionFeedback}
+                      </p>
+                    )}
+
+                    {!item.verified && !item.rejected && (
+                      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <label htmlFor={`review-${item._id}`} className="mb-2 block text-xs font-semibold text-slate-700">
+                          Rejection Review (what is missing / what to add)
+                        </label>
+                        <textarea
+                          id={`review-${item._id}`}
+                          value={reviewInputs[item._id] || ''}
+                          onChange={(event) => onReviewInputChange(item._id, event.target.value)}
+                          rows={3}
+                          placeholder="Example: Certificate unclear hai, event date aur organizer stamp add karo."
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-0 placeholder:text-slate-400 focus:border-rose-300"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex min-w-[230px] flex-col items-start gap-3 lg:items-end">
                     <Badge status={getStatus(item)} />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => updateVerification(item._id, 'approve')}
-                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
-                      >
-                        Approve + Badge
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateVerification(item._id, 'reject')}
-                        className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-500"
-                      >
-                        Reject
-                      </button>
-                    </div>
+                      {!item.verified && !item.rejected ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateVerification(item._id, 'approve')}
+                            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+                          >
+                            Approve + Badge
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateVerification(item._id, 'reject')}
+                            className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-500"
+                          >
+                            Reject With Review
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">
+                          Final status set: {item.verified ? 'Approved' : 'Rejected'}
+                        </p>
+                      )}
                   </div>
                 </div>
                     </>

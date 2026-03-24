@@ -43,6 +43,15 @@ const achievementSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    suspiciousProof: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    suspiciousProofReason: {
+      type: String,
+      default: '',
+    },
     verified: {
       type: Boolean,
       default: false,
@@ -56,6 +65,11 @@ const achievementSchema = new mongoose.Schema(
     verifiedBadge: {
       type: Boolean,
       default: false,
+    },
+    rejectionFeedback: {
+      type: String,
+      default: '',
+      trim: true,
     },
     score: {
       type: Number,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -38,7 +38,12 @@ const LoginPage = () => {
       login(response.data.user);
       navigate(role === 'Admin' ? '/admin' : '/student');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      const serverMessage = err.response?.data?.message;
+      if (!err.response) {
+        setError('Login failed: backend not reachable or CORS blocked. Refresh and try again.');
+      } else {
+        setError(serverMessage || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -65,7 +70,16 @@ const LoginPage = () => {
       setSignupEmail('');
       setSignupPassword('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.message;
+
+      if (!err.response) {
+        setError('Create account failed: backend not reachable or CORS blocked. Refresh and try again.');
+      } else if (status === 409) {
+        setError('Email already registered. Please use Student Login with your password.');
+      } else {
+        setError(serverMessage || 'Create account failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,27 +95,40 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-900 px-4 py-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#22d3ee33,transparent_50%),radial-gradient(circle_at_bottom,#f59e0b33,transparent_45%)]" />
+    <div className="login-hero relative min-h-screen overflow-hidden px-4 py-10">
+      <div className="login-aurora-bg pointer-events-none absolute inset-0" />
+      <div className="login-grid-overlay pointer-events-none absolute inset-0" />
+      <div className="login-orb login-orb-one" />
+      <div className="login-orb login-orb-two" />
+      <div className="login-orb login-orb-three" />
 
       <div className="relative mx-auto flex min-h-[85vh] w-full max-w-5xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-slate-700/40 bg-white/95 shadow-2xl md:grid-cols-2">
-          <div className="flex flex-col justify-center bg-slate-950 p-10 text-white">
-            <p className="inline-flex w-fit rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+        <div className="glass-panel reveal-up grid w-full overflow-hidden rounded-3xl border border-slate-600/40 bg-white/95 shadow-2xl md:grid-cols-2">
+          <div className="relative flex flex-col justify-center bg-slate-950 p-10 text-white">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(34,211,238,0.25),transparent_40%),radial-gradient(circle_at_85%_80%,rgba(245,158,11,0.18),transparent_42%)]" />
+
+            <p className="relative inline-flex w-fit rounded-full border border-cyan-400/35 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
               Trusted Student Records
             </p>
-            <h1 className="mt-6 text-4xl font-black tracking-tight">Unifolio - AI Powered Cetralized System</h1>
-            <p className="mt-4 text-sm leading-relaxed text-slate-300">
+
+            <h1 className="relative mt-6 text-4xl font-black tracking-tight leading-tight sm:text-5xl">
+              Unifolio
+              <span className="block text-cyan-300">AI Powered Cetralized System</span>
+            </h1>
+
+            <p className="relative mt-4 text-sm leading-relaxed text-slate-200">
               Centralized and verifiable academic plus extracurricular portfolio platform for institutions.
             </p>
-            <div className="mt-8 rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm text-slate-300">
-              <p className="font-semibold text-cyan-200">Demo Credentials</p>
-              <p className="mt-2">Student: student@unifolio.com / student123</p>
-              <p>Admin: admin@unifolio.com / admin123</p>
-            </div>
+
+            <Link
+              to="/public-search"
+              className="relative mt-4 inline-flex w-fit rounded-xl border border-cyan-300/50 bg-cyan-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-200 transition hover:bg-cyan-500/20"
+            >
+              Search Public Profiles (View Only)
+            </Link>
           </div>
 
-          <div className="p-8 md:p-10">
+          <div className="reveal-up-delayed p-8 md:p-10">
             <h2 className="text-2xl font-bold text-slate-900">Login Portal</h2>
             <p className="mt-1 text-sm text-slate-500">First choose your login type, then continue.</p>
 
@@ -121,8 +148,11 @@ const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => openAuthView('student')}
-                    className="rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-left transition hover:bg-cyan-100"
+                    className="choice-card rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-left transition hover:bg-cyan-100"
                   >
+                    <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-700 text-xs font-bold text-white">
+                      ST
+                    </span>
                     <p className="text-base font-bold text-slate-900">Continue as Student</p>
                     <p className="mt-1 text-xs text-slate-600">Login with email/password or create a new account.</p>
                   </button>
@@ -130,8 +160,11 @@ const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => openAuthView('admin')}
-                    className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left transition hover:bg-amber-100"
+                    className="choice-card rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left transition hover:bg-amber-100"
                   >
+                    <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 text-xs font-bold text-white">
+                      AD
+                    </span>
                     <p className="text-base font-bold text-slate-900">Continue as Admin</p>
                     <p className="mt-1 text-xs text-slate-600">Admin portal access with secure credentials.</p>
                   </button>

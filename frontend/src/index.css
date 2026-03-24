@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: 'Sora', 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #0f172a;
@@ -14,6 +16,212 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+@keyframes auroraShift {
+  0% {
+    background-position: 0% 50%, 100% 50%, 50% 100%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 50% 0%;
+  }
+  100% {
+    background-position: 0% 50%, 100% 50%, 50% 100%;
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-18px) translateX(12px) scale(1.06);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+}
+
+@keyframes gridPan {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(48px, 48px, 0);
+  }
+}
+
+@keyframes revealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shellAurora {
+  0% {
+    background-position: 0% 40%, 100% 65%, 50% 100%;
+  }
+  50% {
+    background-position: 100% 60%, 0% 35%, 50% 0%;
+  }
+  100% {
+    background-position: 0% 40%, 100% 65%, 50% 100%;
+  }
+}
+
+@keyframes shellBlobFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(16px, -20px, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes shellGridPan {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(40px, 40px, 0);
+  }
+}
+
+.app-shell-bg {
+  background: linear-gradient(145deg, #eef4ff 0%, #f4fbff 45%, #f9f7ef 100%);
+}
+
+.app-shell-aurora {
+  background-image:
+    radial-gradient(40% 40% at 15% 20%, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0) 72%),
+    radial-gradient(42% 46% at 85% 30%, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0) 72%),
+    radial-gradient(45% 48% at 50% 90%, rgba(251, 191, 36, 0.22) 0%, rgba(251, 191, 36, 0) 75%);
+  background-size: 160% 160%, 170% 170%, 180% 180%;
+  animation: shellAurora 16s ease-in-out infinite;
+  filter: blur(2px);
+}
+
+.app-shell-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at 50% 15%, black 35%, transparent 92%);
+  animation: shellGridPan 11s linear infinite;
+  opacity: 0.5;
+}
+
+.app-shell-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(2px);
+  animation: shellBlobFloat 10s ease-in-out infinite;
+}
+
+.app-shell-blob-one {
+  width: 240px;
+  height: 240px;
+  top: 12%;
+  right: 4%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.22) 0%, rgba(14, 165, 233, 0.04) 70%);
+}
+
+.app-shell-blob-two {
+  width: 300px;
+  height: 300px;
+  left: -70px;
+  bottom: 10%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.03) 70%);
+  animation-delay: 1.6s;
+}
+
+.login-hero {
+  background: linear-gradient(140deg, #020617 0%, #0b1324 45%, #111827 100%);
+}
+
+.login-aurora-bg {
+  background-image:
+    radial-gradient(40% 40% at 20% 20%, rgba(34, 211, 238, 0.34) 0%, rgba(34, 211, 238, 0) 70%),
+    radial-gradient(45% 45% at 80% 30%, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0) 72%),
+    radial-gradient(40% 42% at 50% 80%, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0) 72%);
+  background-size: 160% 160%, 160% 160%, 170% 170%;
+  animation: auroraShift 14s ease-in-out infinite;
+  filter: blur(6px);
+}
+
+.login-grid-overlay {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 90%);
+  animation: gridPan 9s linear infinite;
+  opacity: 0.6;
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(1px);
+  animation: drift 8s ease-in-out infinite;
+}
+
+.login-orb-one {
+  width: 220px;
+  height: 220px;
+  top: 8%;
+  left: 6%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.5) 0%, rgba(34, 211, 238, 0.03) 70%);
+}
+
+.login-orb-two {
+  width: 280px;
+  height: 280px;
+  bottom: 3%;
+  right: 6%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.42) 0%, rgba(245, 158, 11, 0.02) 72%);
+  animation-delay: 1.5s;
+}
+
+.login-orb-three {
+  width: 150px;
+  height: 150px;
+  top: 56%;
+  left: 52%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0.02) 70%);
+  animation-delay: 0.8s;
+}
+
+.glass-panel {
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 28px 80px rgba(2, 6, 23, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.reveal-up {
+  animation: revealUp 0.75s ease-out both;
+}
+
+.reveal-up-delayed {
+  animation: revealUp 0.85s 0.14s ease-out both;
+}
+
+.choice-card {
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+
+.choice-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.15);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -22,7 +230,27 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f1f5f9;
+  background: linear-gradient(145deg, #eef4ff 0%, #f4fbff 45%, #f9f7ef 100%);
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, sans-serif;
+  font-feature-settings: 'cv11' 1, 'ss01' 1;
+  letter-spacing: 0.005em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 a {

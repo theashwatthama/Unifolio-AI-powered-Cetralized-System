@@ -17,7 +17,7 @@ const getAllSubmissions = async (req, res) => {
 const verifyAchievement = async (req, res) => {
   try {
     const { id } = req.params;
-    const { action } = req.body;
+    const { action, rejectionFeedback = '' } = req.body;
 
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({ message: "action must be either 'approve' or 'reject'" });
@@ -28,9 +28,14 @@ const verifyAchievement = async (req, res) => {
       return res.status(404).json({ message: 'Achievement not found' });
     }
 
+    if (action === 'reject' && !String(rejectionFeedback).trim()) {
+      return res.status(400).json({ message: 'Rejection feedback is required for rejected submissions' });
+    }
+
     achievement.verified = action === 'approve';
     achievement.rejected = action === 'reject';
     achievement.verifiedBadge = action === 'approve';
+    achievement.rejectionFeedback = action === 'reject' ? String(rejectionFeedback).trim() : '';
     achievement.score = calculateAchievementScore({
       category: achievement.category,
       verified: achievement.verified,

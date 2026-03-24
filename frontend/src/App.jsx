@@ -5,6 +5,7 @@ import AddAchievementPage from './pages/AddAchievementPage';
 import AdminPanel from './pages/AdminPanel';
 import LoginPage from './pages/LoginPage';
 import PublicProfile from './pages/PublicProfile';
+import PublicSearchPage from './pages/PublicSearchPage';
 import StudentDashboard from './pages/StudentDashboard';
 
 const HomeRedirect = () => {
@@ -46,6 +47,7 @@ function App() {
         }
       />
       <Route path="/profile/:id" element={<PublicProfile />} />
+      <Route path="/public-search" element={<PublicSearchPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
