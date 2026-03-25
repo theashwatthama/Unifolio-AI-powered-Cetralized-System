@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/api';
 import Badge from '../components/Badge';
 import Layout from '../components/Layout';
@@ -116,13 +117,13 @@ const AdminPanel = () => {
 
   return (
     <Layout>
-      <section className="space-y-6">
-        <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-amber-100 via-white to-cyan-100 p-6 shadow-sm">
+      <section className="dashboard-shell space-y-6">
+        <div className="admin-hero rounded-2xl p-6 shadow-sm">
           <h2 className="text-2xl font-black text-slate-900">Admin Verification Panel</h2>
           <p className="mt-2 text-sm text-slate-600">Review, approve, or reject submitted achievements.</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="surface-card rounded-2xl p-5">
           <div className="mb-4 flex flex-wrap gap-2">
             {STATUS_TABS.map((tab) => {
               const isActive = statusFilter === tab.value;
@@ -133,8 +134,8 @@ const AdminPanel = () => {
                   onClick={() => setStatusFilter(tab.value)}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                     isActive
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                      ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                      : 'border border-slate-300 bg-white text-slate-700 hover:-translate-y-0.5 hover:bg-slate-100'
                   }`}
                 >
                   {tab.label}
@@ -149,7 +150,7 @@ const AdminPanel = () => {
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
               >
                 <option value="all">All Categories</option>
                 {CATEGORIES.map((category) => (
@@ -164,7 +165,7 @@ const AdminPanel = () => {
               <button
                 type="button"
                 onClick={fetchSubmissions}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-100"
               >
                 Refresh Submissions
               </button>
@@ -174,7 +175,7 @@ const AdminPanel = () => {
               <button
                 type="button"
                 onClick={resetDetails}
-                className="w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                className="w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"
               >
                 Reset Details To 0
               </button>
@@ -195,7 +196,7 @@ const AdminPanel = () => {
         ) : (
           <div className="grid gap-4">
             {filteredSubmissions.map((item) => (
-              <article key={item._id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <article key={item._id} className="surface-card rounded-2xl p-5">
                 {(() => {
                   const proofUrl = resolveProofUrl(item.proofFileUrl);
                   const isImageProof = (item.proofFileType || '').startsWith('image/');
@@ -228,7 +229,7 @@ const AdminPanel = () => {
                     )}
 
                     {proofUrl && (
-                      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="achievement-card mt-3 rounded-xl p-3">
                         <p className="text-xs font-semibold text-slate-700">Uploaded Proof</p>
                         {isImageProof ? (
                           <a href={proofUrl} target="_blank" rel="noreferrer">
@@ -258,7 +259,7 @@ const AdminPanel = () => {
                     )}
 
                     {!item.verified && !item.rejected && (
-                      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="achievement-card mt-3 rounded-xl p-3">
                         <label htmlFor={`review-${item._id}`} className="mb-2 block text-xs font-semibold text-slate-700">
                           Rejection Review (what is missing / what to add)
                         </label>
@@ -276,6 +277,14 @@ const AdminPanel = () => {
 
                   <div className="flex min-w-[230px] flex-col items-start gap-3 lg:items-end">
                     <Badge status={getStatus(item)} />
+                      {item.userId?._id && (
+                        <Link
+                          to={`/profile/${item.userId._id}`}
+                          className="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100"
+                        >
+                          View Profile
+                        </Link>
+                      )}
                       {!item.verified && !item.rejected ? (
                         <div className="flex gap-2">
                           <button

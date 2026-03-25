@@ -11,14 +11,29 @@ const getUsers = async (req, res) => {
 
 const registerStudent = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'name, email and password are required' });
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: 'name, username, email and password are required' });
     }
 
     if (password.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    const normalizedUsername = String(username).trim().toLowerCase();
+    const usernamePattern = /^[a-z0-9._-]+$/;
+
+    if (normalizedUsername.length < 3 || normalizedUsername.length > 30 || !usernamePattern.test(normalizedUsername)) {
+      return res.status(400).json({
+        message: 'Username must be 3-30 chars and can contain only letters, numbers, dot, underscore, hyphen',
+      });
+    }
+
+    const existingUsername = await User.findOne({ username: normalizedUsername });
+
+    if (existingUsername) {
+      return res.status(409).json({ message: 'Username already taken' });
     }
 
     const normalizedEmail = email.toLowerCase();
@@ -30,6 +45,7 @@ const registerStudent = async (req, res) => {
 
     const user = await User.create({
       name,
+      username: normalizedUsername,
       email: normalizedEmail,
       password,
       role: 'Student',
@@ -40,6 +56,7 @@ const registerStudent = async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
       },
@@ -51,16 +68,22 @@ const registerStudent = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, role, password } = req.body;
+    const { identifier, email, role, password } = req.body;
+    const loginIdentifier = String(identifier || email || '')
+      .trim()
+      .toLowerCase();
 
-    if (!email || !role || !password) {
-      return res.status(400).json({ message: 'email, role and password are required' });
+    if (!loginIdentifier || !role || !password) {
+      return res.status(400).json({ message: 'email/username, role and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), role }).select('+password');
+    const user = await User.findOne({
+      role,
+      $or: [{ email: loginIdentifier }, { username: loginIdentifier }],
+    }).select('+password');
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found for selected role' });
+      return res.status(404).json({ message: 'User not found for selected role with provided email/username' });
     }
 
     if (user.password !== password) {
@@ -72,6 +95,7 @@ const login = async (req, res) => {
       user: {
         _id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
       },

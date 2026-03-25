@@ -42,9 +42,9 @@ const CategoryChart = ({ breakdown }) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-lg font-semibold text-slate-900">Category Breakdown</h3>
-      <p className="mt-1 text-sm text-slate-500">Achievement distribution across categories</p>
+    <div className="surface-card rounded-2xl p-5">
+      <h3 className="text-2xl font-black tracking-tight text-slate-900">Category Breakdown</h3>
+      <p className="mt-1 text-sm font-medium text-slate-500">Achievement distribution across categories</p>
       <div className="mt-4 h-72">
         <Bar
           key={safeBreakdown.map((item) => `${item.category}-${item.count}`).join('|')}

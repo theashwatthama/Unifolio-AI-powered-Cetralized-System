@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
@@ -12,14 +12,17 @@ const LoginPage = () => {
   const [adminEmail, setAdminEmail] = useState('admin@unifolio.com');
   const [adminPassword, setAdminPassword] = useState('admin123');
   const [authView, setAuthView] = useState('choice');
+  const [selectedChoice, setSelectedChoice] = useState('');
   const [showSignup, setShowSignup] = useState(false);
   const [signupName, setSignupName] = useState('');
+  const [signupUsername, setSignupUsername] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const choiceDelayRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -27,14 +30,22 @@ const LoginPage = () => {
     }
   }, [navigate, user]);
 
-  const handleLogin = async (event, role, email, password) => {
+  useEffect(() => {
+    return () => {
+      if (choiceDelayRef.current) {
+        clearTimeout(choiceDelayRef.current);
+      }
+    };
+  }, []);
+
+  const handleLogin = async (event, role, identifier, password) => {
     event.preventDefault();
     setLoading(true);
     setError('');
     setMessage('');
 
     try {
-      const response = await api.post('/login', { email, role, password });
+      const response = await api.post('/login', { identifier, role, password });
       login(response.data.user);
       navigate(role === 'Admin' ? '/admin' : '/student');
     } catch (err) {
@@ -58,6 +69,7 @@ const LoginPage = () => {
     try {
       await api.post('/register-student', {
         name: signupName,
+        username: signupUsername,
         email: signupEmail,
         password: signupPassword,
       });
@@ -67,6 +79,7 @@ const LoginPage = () => {
       setStudentEmail(signupEmail);
       setStudentPassword('');
       setSignupName('');
+      setSignupUsername('');
       setSignupEmail('');
       setSignupPassword('');
     } catch (err) {
@@ -76,7 +89,7 @@ const LoginPage = () => {
       if (!err.response) {
         setError('Create account failed: backend not reachable or CORS blocked. Refresh and try again.');
       } else if (status === 409) {
-        setError('Email already registered. Please use Student Login with your password.');
+        setError(serverMessage || 'Username or email already registered. Please use another one.');
       } else {
         setError(serverMessage || 'Create account failed. Please try again.');
       }
@@ -86,12 +99,32 @@ const LoginPage = () => {
   };
 
   const openAuthView = (nextView) => {
+    if (choiceDelayRef.current) {
+      clearTimeout(choiceDelayRef.current);
+      choiceDelayRef.current = null;
+    }
+
     setAuthView(nextView);
+    setSelectedChoice('');
     setError('');
     setMessage('');
     if (nextView !== 'student') {
       setShowSignup(false);
     }
+  };
+
+  const handleChoiceSelect = (nextView) => {
+    setSelectedChoice(nextView);
+    setError('');
+    setMessage('');
+
+    if (choiceDelayRef.current) {
+      clearTimeout(choiceDelayRef.current);
+    }
+
+    choiceDelayRef.current = setTimeout(() => {
+      openAuthView(nextView);
+    }, 220);
   };
 
   return (
@@ -122,7 +155,7 @@ const LoginPage = () => {
 
             <Link
               to="/public-search"
-              className="relative mt-4 inline-flex w-fit rounded-xl border border-cyan-300/50 bg-cyan-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-200 transition hover:bg-cyan-500/20"
+              className="guest-cta relative mt-4 inline-flex w-fit rounded-xl border border-cyan-300/50 bg-cyan-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-200"
             >
               Search Public Profiles (View Only)
             </Link>
@@ -147,8 +180,10 @@ const LoginPage = () => {
                 <div className="grid gap-3">
                   <button
                     type="button"
-                    onClick={() => openAuthView('student')}
-                    className="choice-card rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-left transition hover:bg-cyan-100"
+                    onClick={() => handleChoiceSelect('student')}
+                    className={`choice-card choice-card-student rounded-2xl border border-cyan-300 bg-cyan-50 p-4 text-left transition hover:bg-cyan-100 ${
+                      selectedChoice === 'student' ? 'choice-card-selected' : ''
+                    }`}
                   >
                     <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-700 text-xs font-bold text-white">
                       ST
@@ -159,8 +194,10 @@ const LoginPage = () => {
 
                   <button
                     type="button"
-                    onClick={() => openAuthView('admin')}
-                    className="choice-card rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left transition hover:bg-amber-100"
+                    onClick={() => handleChoiceSelect('admin')}
+                    className={`choice-card choice-card-admin rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left transition hover:bg-amber-100 ${
+                      selectedChoice === 'admin' ? 'choice-card-selected' : ''
+                    }`}
                   >
                     <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 text-xs font-bold text-white">
                       AD
@@ -198,11 +235,10 @@ const LoginPage = () => {
                     className="space-y-3 rounded-2xl border border-slate-200 p-4"
                   >
                     <input
-                      type="email"
                       required
                       value={studentEmail}
                       onChange={(event) => setStudentEmail(event.target.value)}
-                      placeholder="Student Email"
+                      placeholder="Student Email or Username"
                       className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-cyan-500 focus:outline-none"
                     />
                     <input
@@ -233,6 +269,13 @@ const LoginPage = () => {
                         onChange={(event) => setSignupName(event.target.value)}
                         placeholder="Full Name"
                         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-cyan-500 focus:outline-none"
+                      />
+                      <input
+                        required
+                        value={signupUsername}
+                        onChange={(event) => setSignupUsername(event.target.value)}
+                        placeholder="Username (unique, e.g. rahul_007)"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm lowercase focus:border-cyan-500 focus:outline-none"
                       />
                       <input
                         type="email"
@@ -282,11 +325,10 @@ const LoginPage = () => {
                     className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/40 p-4"
                   >
                     <input
-                      type="email"
                       required
                       value={adminEmail}
                       onChange={(event) => setAdminEmail(event.target.value)}
-                      placeholder="Admin Email"
+                      placeholder="Admin Email or Username"
                       className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-amber-500 focus:outline-none"
                     />
                     <input

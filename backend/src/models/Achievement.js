@@ -15,7 +15,7 @@ const achievementSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Hackathon', 'Internship', 'Sports', 'Course', 'LeetCode', 'HackerRank', 'GeeksforGeeks', 'Codeforces'],
+      enum: ['Hackathon', 'Internship', 'Academics', 'Sports', 'Course', 'LeetCode', 'HackerRank', 'GeeksforGeeks', 'Codeforces'],
       required: true,
     },
     description: {
@@ -40,6 +40,25 @@ const achievementSchema = new mongoose.Schema(
       default: '',
     },
     proofFileType: {
+      type: String,
+      default: '',
+    },
+    proofFileHash: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    proofTextFingerprint: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    proofVisualHash: {
+      type: String,
+      default: '',
+      index: true,
+    },
+    proofExtractedText: {
       type: String,
       default: '',
     },

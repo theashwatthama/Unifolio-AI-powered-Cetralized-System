@@ -1,6 +1,7 @@
 export const CATEGORIES = [
   'Hackathon',
   'Internship',
+  'Academics',
   'Sports',
   'Course',
   'LeetCode',

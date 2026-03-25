@@ -23,22 +23,27 @@ const Layout = ({ children }) => {
       <div className="app-shell-blob app-shell-blob-two" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm backdrop-blur">
+        <header className="shell-header mb-6 rounded-3xl border p-4 backdrop-blur md:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <div className="shell-heading-row">
+              <h1 className="shell-title text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
                 Unifolio - AI Powered Cetralized System
               </h1>
-              <p className="text-sm text-slate-500">Unified trusted portfolio for student achievements</p>
+              <span className="shell-heading-sep" aria-hidden="true">
+                |
+              </span>
+              <p className="shell-subtitle text-sm font-medium text-slate-600">
+                Unified trusted portfolio for student achievements
+              </p>
             </div>
 
             {user && (
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                <span className="shell-chip rounded-full border px-4 py-1.5 text-sm font-extrabold uppercase tracking-wide text-slate-700">
                   {user.name}
                 </span>
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                  className={`shell-chip rounded-full border px-4 py-1.5 text-sm font-extrabold ${
                     roleStyles[user.role] || 'bg-slate-100 text-slate-700 border-slate-300'
                   }`}
                 >
@@ -49,21 +54,21 @@ const Layout = ({ children }) => {
                   <>
                     <Link
                       to="/student"
-                      className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+                      className="shell-nav-btn shell-nav-btn-primary rounded-xl px-4 py-2.5 text-sm font-bold text-white"
                     >
                       Dashboard
                     </Link>
                     <Link
                       to="/add-achievement"
-                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                      className="shell-nav-btn rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700"
                     >
                       Add Achievement
                     </Link>
                     <Link
                       to={`/profile/${user._id}`}
-                      className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+                      className="shell-nav-btn shell-nav-btn-success rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700"
                     >
-                      My Achievements
+                      My Profile
                     </Link>
                   </>
                 )}
@@ -71,7 +76,7 @@ const Layout = ({ children }) => {
                 {user.role === 'Admin' && (
                   <Link
                     to="/admin"
-                    className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+                    className="shell-nav-btn shell-nav-btn-primary rounded-xl px-4 py-2.5 text-sm font-bold text-white"
                   >
                     Admin Panel
                   </Link>
@@ -80,7 +85,7 @@ const Layout = ({ children }) => {
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+                  className="shell-nav-btn shell-nav-btn-danger rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700"
                 >
                   Logout
                 </button>

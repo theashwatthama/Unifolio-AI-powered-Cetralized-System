@@ -18,6 +18,7 @@ const AddAchievementPage = () => {
   const [proofFile, setProofFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState('info');
   const [detectorWarning, setDetectorWarning] = useState('');
   const fileInputRef = useRef(null);
 
@@ -38,6 +39,7 @@ const AddAchievementPage = () => {
     event.preventDefault();
     setLoading(true);
     setMessage('');
+    setMessageTone('info');
     setDetectorWarning('');
 
     try {
@@ -57,6 +59,7 @@ const AddAchievementPage = () => {
 
       const response = await api.post('/add-achievement', payload);
       setMessage('Achievement added successfully. It is now pending admin verification.');
+      setMessageTone('success');
       setDetectorWarning(response.data?.detectorWarning || '');
       setFormData({
         title: '',
@@ -69,7 +72,19 @@ const AddAchievementPage = () => {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to add achievement');
+      const apiMessage = error.response?.data?.message || 'Failed to add achievement';
+      const warning = error.response?.data?.detectorWarning || '';
+      const reasons = Array.isArray(error.response?.data?.detectorReasons)
+        ? error.response.data.detectorReasons
+        : [];
+
+      setMessage(apiMessage);
+      setMessageTone('error');
+
+      if (warning || reasons.length > 0) {
+        const reasonText = reasons.join(' | ');
+        setDetectorWarning([warning, reasonText].filter(Boolean).join(' '));
+      }
     } finally {
       setLoading(false);
     }
@@ -161,11 +176,19 @@ const AddAchievementPage = () => {
           </div>
 
           {message && (
-            <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm text-cyan-700">{message}</p>
+            <p
+              className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                messageTone === 'error'
+                  ? 'border-rose-300 bg-rose-50 text-rose-800'
+                  : 'border-cyan-200 bg-cyan-50 text-cyan-700'
+              }`}
+            >
+              {message}
+            </p>
           )}
 
           {detectorWarning && (
-            <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+            <p className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-800">
               {detectorWarning}
             </p>
           )}

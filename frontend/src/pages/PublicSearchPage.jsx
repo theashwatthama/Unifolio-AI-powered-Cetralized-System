@@ -1,57 +1,138 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import Layout from '../components/Layout';
 
 const PublicSearchPage = () => {
   const [query, setQuery] = useState('');
+  const [searchFilter, setSearchFilter] = useState('name');
   const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
+  const latestSuggestionRequest = useRef(0);
 
-  const searchWithLegacyApiFallback = async (nameQuery) => {
+  const searchWithLegacyApiFallback = async (searchQuery, filterType) => {
     const usersResponse = await api.get('/users');
     const users = Array.isArray(usersResponse.data) ? usersResponse.data : [];
-    const needle = nameQuery.toLowerCase();
+    const needle = searchQuery.toLowerCase();
 
-    const matchedStudents = users
-      .filter((user) => user.role === 'Student' && String(user.name || '').toLowerCase().includes(needle))
-      .slice(0, 20);
+    const students = users.filter((user) => user.role === 'Student').slice(0, 60);
 
     const detailedProfiles = await Promise.all(
-      matchedStudents.map(async (user) => {
+      students.map(async (user) => {
         try {
           const profileResponse = await api.get(`/profile/${user._id}`);
           const profile = profileResponse.data || {};
           const achievements = Array.isArray(profile.achievements) ? profile.achievements : [];
+          const skillNames = Array.isArray(profile.skills) ? profile.skills.map((item) => item.skillName) : [];
 
           return {
             _id: user._id,
             name: user.name,
+            username: user.username,
             email: user.email,
             role: user.role,
             trustScore: profile.trustScore || 0,
             totalAchievements: achievements.length,
             verifiedCount: achievements.filter((item) => item.verified).length,
-            pendingCount: achievements.filter((item) => !item.verified && !item.rejected).length,
+            pendingCount: 0,
+            skills: skillNames,
+            matchedSkills: skillNames.filter((item) => String(item).toLowerCase().includes(needle)),
           };
         } catch (error) {
           return {
             _id: user._id,
             name: user.name,
+            username: user.username,
             email: user.email,
             role: user.role,
             trustScore: 0,
             totalAchievements: 0,
             verifiedCount: 0,
             pendingCount: 0,
+            skills: [],
+            matchedSkills: [],
           };
         }
       })
     );
 
-    return detailedProfiles;
+    const filteredProfiles = detailedProfiles.filter((item) => {
+      if (filterType === 'skill') {
+        return item.matchedSkills.length > 0;
+      }
+
+      return String(item.name || '').toLowerCase().includes(needle);
+    });
+
+    return filteredProfiles
+      .sort((left, right) => right.trustScore - left.trustScore)
+      .slice(0, 20);
+  };
+
+  const fetchSearchResults = async (searchQuery, filterType) => {
+    const response = await api.get('/public/search', {
+      params: filterType === 'skill' ? { skill: searchQuery } : { name: searchQuery },
+    });
+
+    return response.data?.results || [];
+  };
+
+  useEffect(() => {
+    const trimmed = query.trim();
+
+    if (!trimmed) {
+      setSuggestions([]);
+      setSuggestionsLoading(false);
+      return;
+    }
+
+    const requestId = latestSuggestionRequest.current + 1;
+    latestSuggestionRequest.current = requestId;
+
+    const timeout = setTimeout(async () => {
+      setSuggestionsLoading(true);
+
+      try {
+        const nextSuggestions = await fetchSearchResults(trimmed, searchFilter);
+        if (latestSuggestionRequest.current === requestId) {
+          setSuggestions(nextSuggestions.slice(0, 6));
+        }
+      } catch (err) {
+        try {
+          const fallbackSuggestions = await searchWithLegacyApiFallback(trimmed, searchFilter);
+          if (latestSuggestionRequest.current === requestId) {
+            setSuggestions(fallbackSuggestions.slice(0, 6));
+          }
+        } catch (fallbackError) {
+          if (latestSuggestionRequest.current === requestId) {
+            setSuggestions([]);
+          }
+        }
+      } finally {
+        if (latestSuggestionRequest.current === requestId) {
+          setSuggestionsLoading(false);
+        }
+      }
+    }, 220);
+
+    return () => clearTimeout(timeout);
+  }, [query, searchFilter]);
+
+  const onSelectSuggestion = (item) => {
+    if (searchFilter === 'skill' && item.matchedSkills?.length) {
+      setQuery(item.matchedSkills[0]);
+    } else {
+      setQuery(item.name || '');
+    }
+
+    setSuggestions([]);
+    setResults([item]);
+    setSearched(true);
+    setError('');
   };
 
   const onSearch = async (event) => {
@@ -59,7 +140,7 @@ const PublicSearchPage = () => {
     const trimmed = query.trim();
 
     if (!trimmed) {
-      setError('Please enter full name to search');
+      setError(searchFilter === 'skill' ? 'Please enter a skill to search' : 'Please enter full name to search');
       setResults([]);
       setSearched(false);
       return;
@@ -67,17 +148,15 @@ const PublicSearchPage = () => {
 
     setLoading(true);
     setError('');
+    setSuggestions([]);
 
     try {
-      const response = await api.get('/public/search', {
-        params: { name: trimmed },
-      });
-
-      setResults(response.data?.results || []);
+      const nextResults = await fetchSearchResults(trimmed, searchFilter);
+      setResults(nextResults);
       setSearched(true);
     } catch (err) {
       try {
-        const fallbackResults = await searchWithLegacyApiFallback(trimmed);
+        const fallbackResults = await searchWithLegacyApiFallback(trimmed, searchFilter);
         setResults(fallbackResults);
         setSearched(true);
       } catch (fallbackError) {
@@ -96,16 +175,63 @@ const PublicSearchPage = () => {
         <section className="rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50 p-6 shadow-sm">
           <h2 className="text-2xl font-black text-slate-900">Public Profile Search</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Full name enter karke kisi bhi student ka trusted public portfolio dekh sakte ho.
+            Recruiter full name ya skill (Java, MERN, React, Node) se students search kar sakta hai.
           </p>
 
-          <form onSubmit={onSearch} className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Enter full name (e.g. Aarav Sharma)"
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 focus:border-cyan-500 focus:outline-none"
-            />
+          <form onSubmit={onSearch} className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
+            <select
+              value={searchFilter}
+              onChange={(event) => {
+                setSearchFilter(event.target.value);
+                setQuery('');
+                setSuggestions([]);
+                setResults([]);
+                setSearched(false);
+                setError('');
+              }}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 focus:border-cyan-500 focus:outline-none"
+            >
+              <option value="name">Search By: Full Name</option>
+              <option value="skill">Search By: Skill</option>
+            </select>
+
+            <div className="relative">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={
+                  searchFilter === 'skill'
+                    ? 'Enter skill (e.g. Java, MERN Stack, React)'
+                    : 'Enter full name (e.g. Aarav Sharma)'
+                }
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 focus:border-cyan-500 focus:outline-none"
+              />
+
+              {query.trim() && (suggestionsLoading || suggestions.length > 0) && (
+                <div className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                  {suggestionsLoading ? (
+                    <p className="px-3 py-2 text-xs text-slate-500">Searching profiles...</p>
+                  ) : (
+                    suggestions.map((item) => (
+                      <button
+                        key={item._id}
+                        type="button"
+                        onClick={() => onSelectSuggestion(item)}
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition hover:bg-cyan-50"
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold text-slate-900">{item.name}</span>
+                          <span className="block text-xs text-slate-500">@{item.username || 'student'}</span>
+                        </span>
+                        <span className="rounded-full border border-cyan-300 bg-cyan-50 px-2 py-1 text-[11px] font-semibold text-cyan-700">
+                          Select
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="submit"
               disabled={loading}
@@ -121,7 +247,7 @@ const PublicSearchPage = () => {
         <section className="space-y-4">
           {searched && !loading && results.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
-              No public profiles found for this name.
+              {searchFilter === 'skill' ? 'No students found for this skill.' : 'No public profiles found for this name.'}
             </div>
           ) : (
             results.map((item) => (
@@ -129,12 +255,17 @@ const PublicSearchPage = () => {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{item.name}</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">@{item.username || 'student'}</p>
                     <p className="mt-1 text-sm text-slate-600">{item.email}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
                       <span className="rounded-full bg-slate-100 px-2 py-1">Trust Score: {item.trustScore}</span>
                       <span className="rounded-full bg-slate-100 px-2 py-1">Achievements: {item.totalAchievements}</span>
                       <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">Verified: {item.verifiedCount}</span>
-                      <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">Pending: {item.pendingCount}</span>
+                      {searchFilter === 'skill' && item.matchedSkills?.length > 0 && (
+                        <span className="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">
+                          Skill Match: {item.matchedSkills.join(', ')}
+                        </span>
+                      )}
                     </div>
                   </div>
 

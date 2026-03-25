@@ -1,8 +1,26 @@
-# Unifolio - AI Powered Cetralized System
+# Unifolio - AI Powered Centralized System
 
-Production-ready, hackathon-optimized full-stack application for centralized, trusted student achievement records.
+Production-ready full-stack platform for trusted student achievement portfolios, admin verification, public profile discovery, and AI-powered resume building.
 
-## 1. Folder Structure
+## Highlights
+- Centralized student achievements with proof upload and trust score
+- Admin verification workflow with approve/reject and feedback
+- Public profile search by full name or skill with trust-score ranking
+- Public profile visibility restricted to verified achievements only
+- Manual skill management by students (add/remove)
+- AI resume builder with provider and template support
+  - Providers: Groq, OpenAI, Gemini
+  - Templates: General, Java, MERN, Data
+  - Editable resume sections with add/delete controls
+  - Download as TXT and styled PDF
+- Fake proof detector with duplicate detection and suspicious content checks
+
+## Tech Stack
+- Frontend: React, Vite, Tailwind CSS, Axios, jsPDF, Chart.js
+- Backend: Node.js, Express, MongoDB (Mongoose), Multer, OCR/PDF utilities
+- AI Integrations: Groq API, OpenAI API, Gemini API (with graceful fallback)
+
+## Project Structure
 
 ```text
 .
@@ -19,6 +37,7 @@ Production-ready, hackathon-optimized full-stack application for centralized, tr
 |       |   |-- authController.js
 |       |   `-- profileController.js
 |       |-- data/seed.js
+|       |-- middleware/upload.js
 |       |-- models/
 |       |   |-- Achievement.js
 |       |   |-- Skill.js
@@ -29,151 +48,175 @@ Production-ready, hackathon-optimized full-stack application for centralized, tr
 |       |   |-- authRoutes.js
 |       |   `-- profileRoutes.js
 |       `-- utils/
+|           |-- aiResumeService.js
+|           |-- certificateDetector.js
+|           |-- resumeBuilder.js
 |           |-- scoring.js
 |           `-- skillMap.js
 |-- frontend/
 |   |-- .env.example
-|   |-- index.html
 |   |-- package.json
-|   |-- tailwind.config.js
 |   `-- src/
 |       |-- App.jsx
 |       |-- index.css
-|       |-- main.jsx
 |       |-- api/api.js
-|       |-- components/
-|       |   |-- Badge.jsx
-|       |   |-- CategoryChart.jsx
-|       |   |-- Layout.jsx
-|       |   |-- ProtectedRoute.jsx
-|       |   `-- StatCard.jsx
 |       |-- context/AuthContext.jsx
-|       |-- pages/
-|       |   |-- AddAchievementPage.jsx
-|       |   |-- AdminPanel.jsx
-|       |   |-- LoginPage.jsx
-|       |   |-- PublicProfile.jsx
-|       |   `-- StudentDashboard.jsx
-|       `-- utils/
-|           |-- constants.js
-|           `-- formatters.js
+|       |-- components/
+|       `-- pages/
+|           |-- AddAchievementPage.jsx
+|           |-- AdminPanel.jsx
+|           |-- LoginPage.jsx
+|           |-- PublicProfile.jsx
+|           |-- PublicSearchPage.jsx
+|           `-- StudentDashboard.jsx
 `-- package.json
 ```
 
-## 2. Backend Features and APIs
+## Core Workflows
 
-### Models
-- User: name, email, role
-- Achievement: userId, title, category, description, date, hasProof, verified, rejected, verifiedBadge, score
-- Skill: userId, skillName
+### Student
+1. Register/login as Student
+2. Add achievement with optional proof file
+3. Track timeline status in dashboard
+4. Manage profile skills manually
+5. Generate AI resume, edit sections, copy/download TXT/PDF
 
-### Trust Score Logic
-- Verified: +50
-- Internship: +30
-- Hackathon: +20
-- Proof: +20
+### Admin
+1. Review submissions in Admin Panel
+2. Approve/reject with feedback
+3. Open student profile using View Profile action
+4. Suspicious submissions are blocked before admin queue
 
-### Skill Mapping
-- Hackathon -> Problem Solving
-- Internship -> Industry Experience
-- Sports -> Teamwork
-- Course -> Technical Knowledge
+### Public/Recruiter
+1. Search by name or by skill
+2. Results are sorted by trust score (highest first)
+3. Visit public profile with verified achievements and skills
 
-### APIs
+## Trust Score Logic
+- Verified achievement: +50
+- Internship category: +30
+- Hackathon category: +20
+- Proof attached: +20
+
+## Fake Detector Overview
+- Filename suspicious keyword checks
+- OCR/PDF text extraction checks
+- File hash duplicate detection
+- Text fingerprint duplicate detection
+- Visual hash duplicate detection
+- Similarity checks against existing submissions
+- Suspicious submissions are blocked and not added to timeline/admin queue
+
+## API Snapshot
+
+### Auth
+- POST /api/register-student
+- POST /api/login
+- GET /api/users
+
+### Achievements & Dashboard
 - POST /api/add-achievement
 - GET /api/achievements/:userId
-- PUT /api/verify/:id
-- GET /api/profile/:userId
-- GET /api/resume/:userId
 - GET /api/dashboard/:userId
-- POST /api/login
-- POST /api/register-student
-- GET /api/users
+
+### Admin
 - GET /api/admin/submissions
+- PUT /api/verify/:id
+- DELETE /api/admin/reset-details
 
-## 3. Frontend Features
+### Profile, Search, Resume
+- GET /api/profile/:userId
+- POST /api/profile/:userId/skills
+- DELETE /api/profile/:userId/skills/:skillId
+- GET /api/public/search?name=<value>
+- GET /api/public/search?skill=<value>
+- GET /api/resume/:userId
+- POST /api/resume-ai/:userId
 
-### Pages
-- Login Page (dummy role-based login)
-- Student Dashboard
-- Add Achievement Page
-- Admin Panel
-- Public Profile Page (/profile/:id)
-
-### UI and Functionality
-- Tailwind modern card-based UI
-- Verified badge (green), Pending badge (red), Rejected badge
-- Category chart (Chart.js)
-- Timeline cards
-- Filtering by category and status
-- Auto-generated skills display
-- Public trusted portfolio with trust score
-
-## 4. Setup Instructions
+## Local Setup
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB local instance or MongoDB Atlas URI
+- MongoDB Atlas or local MongoDB
 
-### Install and Run (Single command workflow)
-1. From project root:
-   - `npm install`
-2. Configure backend env:
-   - Copy `backend/.env.example` to `backend/.env`
-   - Set `MONGO_URI`
-3. Start full stack from root:
-   - `npm run dev`
+### 1) Install dependencies
 
-This starts:
-- Backend: http://localhost:5000
+```bash
+npm install
+```
+
+### 2) Configure environment variables
+
+Copy examples:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Then update `backend/.env` with your values.
+
+### 3) Run full stack
+
+```bash
+npm run dev
+```
+
+App URLs:
 - Frontend: http://localhost:5173
+- Backend: http://localhost:5000
+- Health: http://localhost:5000/api/health
 
-### Optional split run
+### Optional run commands
 - Backend only: `npm run dev:backend`
 - Frontend only: `npm run dev:frontend`
 
-## 5. Sample Data (Auto Seeded)
+## Environment Variables
 
-On first backend startup, demo records are inserted automatically.
+### Backend (`backend/.env`)
+- PORT
+- MONGO_URI
+- CORS_ORIGIN
+- DNS_SERVERS
+- MONGO_TLS_INSECURE
+- MONGO_IPV4_ONLY
 
-### Demo Users
+Optional AI providers:
+- GROQ_API_KEY
+- GROQ_MODEL (default: llama-3.1-8b-instant)
+- OPENAI_API_KEY
+- OPENAI_MODEL (default: gpt-4o-mini)
+- GEMINI_API_KEY
+- GEMINI_MODEL (recommended: gemini-2.0-flash)
+
+### Frontend (`frontend/.env`)
+- VITE_API_URL (for deployed backend URL)
+
+## Demo Credentials (Auto Seed)
 - Student: student@unifolio.com / student123
 - Admin: admin@unifolio.com / admin123
 
-### Demo Achievement Set
-- Smart Campus Hackathon Finalist (verified + proof)
-- Software Engineering Internship (verified + proof)
-- Inter-College Football Tournament (pending)
-- Cloud Computing Certification (pending + proof)
+## Deployment (Vercel)
 
-## Demo Flow for Judges
-1. Use separate Student Login or Admin Login on first page.
-2. Optionally create a new student account using Create Student Account.
-3. Login as Student and show dashboard cards, chart, and timeline filters.
-4. Add a new achievement with proof.
-5. Switch to Admin and approve/reject submissions.
-6. Open public profile URL and show trusted portfolio with updated trust score.
+### Backend
+1. Create Vercel project with root directory `backend`
+2. Add backend env variables
+3. Deploy and verify `/api/health`
 
-## Vercel Deployment (Frontend + Backend)
+### Frontend
+1. Create Vercel project with root directory `frontend`
+2. Set `VITE_API_URL` to deployed backend `/api` URL
+3. Deploy
 
-### Backend Deploy (Vercel Project 1)
-1. Push this repository to GitHub.
-2. In Vercel, create a new project and set root directory to `backend`.
-3. Add environment variables in Vercel backend project:
-   - `MONGO_URI` = your MongoDB Atlas connection string
-   - `CORS_ORIGIN` = your frontend Vercel URL (for example: `https://unifolio-frontend.vercel.app`)
-4. Deploy.
-5. Verify backend URL:
-   - `https://<backend-project>.vercel.app/api/health`
+## Troubleshooting
+- If AI resume shows provider quota/model error:
+  - Select another provider in Resume Builder
+  - Verify corresponding API key in backend env
+  - Restart backend server
+- If new backend changes not reflecting:
+  - Stop running backend process and start again (`npm run dev`)
+- If CORS fails on deployment:
+  - Ensure backend `CORS_ORIGIN` exactly matches frontend URL
 
-### Frontend Deploy (Vercel Project 2)
-1. In Vercel, create another project and set root directory to `frontend`.
-2. Add environment variable:
-   - `VITE_API_URL` = `https://<backend-project>.vercel.app/api`
-3. Deploy frontend.
-4. Open your frontend Vercel URL and test login flow.
-
-### Notes
-- `frontend/vercel.json` handles React route fallback.
-- `backend/vercel.json` exposes Express app as serverless API.
-- If CORS issue appears, update backend `CORS_ORIGIN` to exact frontend URL and redeploy backend.
+## License
+This project is intended for educational, portfolio, and hackathon use.

@@ -1,9 +1,9 @@
 const StatCard = ({ title, value, accent = 'text-slate-900', helper }) => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{title}</p>
-      <p className={`mt-2 text-3xl font-bold ${accent}`}>{value}</p>
-      {helper && <p className="mt-2 text-xs text-slate-500">{helper}</p>}
+    <div className="surface-card stat-card rounded-2xl p-5">
+      <p className="text-sm font-semibold tracking-wide text-slate-500">{title}</p>
+      <p className={`mt-2 text-4xl font-black leading-none ${accent}`}>{value}</p>
+      {helper && <p className="mt-3 text-xs text-slate-500">{helper}</p>}
     </div>
   );
 };

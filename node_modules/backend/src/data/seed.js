@@ -68,6 +68,7 @@ const seedDemoData = async () => {
     {
       $set: {
         name: 'Aarav Sharma',
+        username: 'aarav.sharma',
         role: 'Student',
         password: 'student123',
       },
@@ -80,6 +81,7 @@ const seedDemoData = async () => {
     {
       $set: {
         name: 'Neha Verma',
+        username: 'admin.neha',
         role: 'Admin',
         password: 'admin123',
       },

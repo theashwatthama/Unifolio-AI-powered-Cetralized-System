@@ -4,7 +4,7 @@ const { calculateAchievementScore } = require('../utils/scoring');
 
 const getAllSubmissions = async (req, res) => {
   try {
-    const submissions = await Achievement.find()
+    const submissions = await Achievement.find({ suspiciousProof: { $ne: true } })
       .populate('userId', 'name email role')
       .sort({ createdAt: -1 });
 
