@@ -220,3 +220,4 @@ Optional AI providers:
 
 ## License
 This project is intended for educational, portfolio, and hackathon use.
+..........................................................................
